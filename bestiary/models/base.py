@@ -119,6 +119,7 @@ class Stats:
         STAT_HP_PCT,
         STAT_ATK_PCT,
         STAT_DEF_PCT,
+        STAT_SPD_PCT,
         STAT_CRIT_RATE_PCT,
         STAT_CRIT_DMG_PCT,
         STAT_RESIST_PCT,
@@ -136,6 +137,7 @@ class Stats:
         STAT_HP_PCT: STAT_HP,
         STAT_ATK_PCT: STAT_ATK,
         STAT_DEF_PCT: STAT_DEF,
+        STAT_SPD_PCT: STAT_SPD,
     }
 
     COM2US_STAT_MAP = {
