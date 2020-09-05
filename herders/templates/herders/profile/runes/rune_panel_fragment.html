@@ -31,27 +31,7 @@
             {% if rune.substats|length >= 4 %}<li>{{ rune.substat_rune_display.3 }} <span class="{% if rune.substats_grind_value.3 %}rune-grindstone-text{% endif %}">+{{ rune.substat_values.3|add:rune.substats_grind_value.3 }}{% if rune.substats.3 in rune.PERCENT_STATS %}%{% endif %} {% if rune.substats_enchanted.3 %}<img src="{{ img_url_prefix }}runes/enchanted.png" alt="enchanted"/>{% endif %}</span></li>{% endif %}
         </ul>
         {% if rune.notes %}<span><strong>Notes:</strong> {{ rune.notes }}</span>{% endif %}
-        {% if rune.assigned_to %}
-            <div class="rune-assigned-to">
-                <div class="monster-image">
-                    <a href="{% url 'herders:monster_instance_view' profile_name=profile_name instance_id=rune.assigned_to.pk.hex %}" target="_blank">
-                        <img src="{{ img_url_prefix }}monsters/{{ rune.assigned_to.monster.image_filename }}" class="monster-thumb"/>
-                        <span>
-                            {% for x in rune.assigned_to.stars|get_range %}
-                                {% if rune.assigned_to.monster.is_awakened %}
-                                    <img src="{{ img_url_prefix }}stars/star-awakened.png" class="monster-star monster-star-{{ forloop.counter }}" />
-                                {% elif rune.assigned_to.monster.can_awaken %}
-                                    <img src="{{ img_url_prefix }}stars/star-unawakened.png" class="monster-star monster-star-{{ forloop.counter }}" />
-                                {% else %}
-                                    <img src="{{ img_url_prefix }}stars/star-fodder.png" class="monster-star monster-star-{{ forloop.counter }}" />
-                                {% endif %}
-                            {% endfor %}
-                        </span>
-                        <span class="image-plus image-plus-right">{{ rune.assigned_to.level }}</span>
-                    </a>
-                </div>
-            </div>
-        {% endif %}
+
         <ul class="top-right list-unstyled">
             {% if rune.original_quality %}
                 <li>
@@ -74,7 +54,27 @@
                     Eff: {{ rune.efficiency|floatformat:1 }}%
                 </li>
             {% endif %}
-    </ul>
+            {% if rune.assigned_to %}
+                <li>
+                    <div class="monster-image">
+                        <a href="{% url 'herders:monster_instance_view' profile_name=profile_name instance_id=rune.assigned_to.pk.hex %}" target="_blank">
+                            <img src="{{ img_url_prefix }}monsters/{{ rune.assigned_to.monster.image_filename }}" class="monster-thumb"/>
+                            <span>
+                                {% for x in rune.assigned_to.stars|get_range %}
+                                    {% if rune.assigned_to.monster.is_awakened %}
+                                        <img src="{{ img_url_prefix }}stars/star-awakened.png" class="monster-star monster-star-{{ forloop.counter }}" />
+                                    {% elif rune.assigned_to.monster.can_awaken %}
+                                        <img src="{{ img_url_prefix }}stars/star-unawakened.png" class="monster-star monster-star-{{ forloop.counter }}" />
+                                    {% else %}
+                                        <img src="{{ img_url_prefix }}stars/star-fodder.png" class="monster-star monster-star-{{ forloop.counter }}" />
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            <span class="image-plus image-plus-right">{{ rune.assigned_to.level }}</span>
+                        </a>
+                    </div>
+                </li>
+            {% endif %}
+        </ul>
     </div>
-
 </div>

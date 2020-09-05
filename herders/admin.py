@@ -22,41 +22,21 @@ admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 
 
-class RuneInstanceInline(admin.TabularInline):
-    model = models.RuneInstance
-    fields = (
-        'stars',
-        'level',
-        'slot',
-        'quality',
-        'ancient',
-        'main_stat',
-        'main_stat_value',
-        'innate_stat',
-        'innate_stat_value',
-        'substats',
-        'substat_values',
-        'efficiency',
-    )
-    extra = 0
-    show_change_link = True
-
-
 class RuneBuildInline(admin.TabularInline):
     model = models.RuneBuild
-    exclude = ('owner', 'runes', )
+    exclude = ('owner', )
     extra = 0
     show_change_link = True
+    readonly_fields = ('runes', 'artifacts')
 
 
 @admin.register(models.MonsterInstance)
 class MonsterInstanceAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'owner')
     filter_vertical = ('tags',)
-    exclude = ('owner',)
+    exclude = ('owner', 'default_build', 'rta_build', )
     search_fields = ('id', )
-    readonly_fields = ('default_build', 'rta_build', )
-    inlines = (RuneInstanceInline, RuneBuildInline,)
+    inlines = (RuneBuildInline, )
 
 
 admin.site.register(models.MonsterTag)
@@ -76,7 +56,7 @@ class TeamGroupAdmin(admin.ModelAdmin):
 @admin.register(models.RuneInstance)
 class RuneInstanceAdmin(admin.ModelAdmin):
     list_display = ('type', 'stars', 'level', 'slot', 'owner', 'main_stat')
-    search_fields = ('id',)
+    search_fields = ('id', )
     exclude = ('owner', 'assigned_to')
     readonly_fields = ('quality', 'has_hp', 'has_atk', 'has_def', 'has_crit_rate', 'has_crit_dmg', 'has_speed', 'has_resist', 'has_accuracy')
 

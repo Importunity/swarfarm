@@ -66,7 +66,7 @@ urlpatterns = [
             url(r'^edit/(?P<rune_id>[0-9a-f]{32})/$', views.runes.rune_edit, name='rune_edit'),
             url(r'^delete/all/$', views.runes.rune_delete_all, name='rune_delete_all'),
             url(r'^delete/(?P<rune_id>[0-9a-f]{32})/$', views.runes.rune_delete, name='rune_delete'),
-            url(r'^unassign/(?P<rune_id>[0-9a-f]{32})/$', views.runes.rune_unassign, name='rune_unassign'),
+            url(r'^unassign/(?P<instance_id>[0-9a-f]{32})/(?P<rune_id>[0-9a-f]{32})/$', views.runes.rune_unassign, name='rune_unassign'),
             url(r'^unassign/all/$', views.runes.rune_unassign_all, name='rune_unassign_all'),
             url(r'^resave/all/$', views.runes.rune_resave_all, name='rune_resave_all'),
             url(r'^assign/(?P<instance_id>[0-9a-f]{32})/$', views.runes.rune_assign, name='rune_assign'),
@@ -91,7 +91,7 @@ urlpatterns = [
             re_path(r'^assign/(?P<instance_id>[0-9a-f]{32})/$', views.artifacts.assign, name='artifact_assign'),
             re_path(r'^assign/(?P<instance_id>[0-9a-f]{32})/(?P<artifact_id>[0-9a-f]{32})/$', views.artifacts.assign_choice, name='artifact_assign_choice'),
             re_path(r'^assign/(?P<instance_id>[0-9a-f]{32})/(?P<slot>[a-z]*)/', views.artifacts.assign, name='artifact_assign_with_slot'),
-            re_path(r'^unassign/(?P<artifact_id>[0-9a-f]{32})/$', views.artifacts.unassign, name='artifact_unassign'),
+            re_path(r'^unassign/(?P<instance_id>[0-9a-f]{32})/(?P<artifact_id>[0-9a-f]{32})/$', views.artifacts.unassign, name='artifact_unassign'),
         ])),
         url(r'^buildings/', include([
             url(r'^$', views.profile.buildings, name='buildings'),

@@ -59,8 +59,6 @@ def inventory(request, profile_name, box_grouping=None):
     is_owner = (request.user.is_authenticated and summoner.user == request.user)
     artifact_queryset = ArtifactInstance.objects.filter(
         owner=summoner
-    ).select_related(
-        'assigned_to', 'assigned_to__monster'
     ).order_by('-quality', '-level')
     total_count = artifact_queryset.count()
     form = FilterArtifactForm(request.POST or None)
@@ -108,33 +106,30 @@ def inventory(request, profile_name, box_grouping=None):
                     'artifacts': artifact_filter.qs.filter(original_quality=qual_val)
                 })
         elif box_grouping == 'equipped':
-            artifact_box.append({
-                'name': 'Not Equipped',
-                'artifacts': artifact_filter.qs.filter(assigned_to__isnull=True)
-            })
-
-            # Create a dictionary of monster PKs and their equipped runes
-            monsters = OrderedDict()
-            unassigned_runes = artifact_filter.qs.filter(
-                assigned_to__isnull=False
-            ).select_related(
-                'assigned_to',
-                'assigned_to__monster'
-            ).order_by(
-                'assigned_to__monster__name',
-                'slot'
-            )
-
-            for rune in unassigned_runes:
-                if rune.assigned_to.pk not in monsters:
-                    monsters[rune.assigned_to.pk] = {
-                        'name': str(rune.assigned_to),
-                        'artifacts': []
-                    }
-
-                monsters[rune.assigned_to.pk]['artifacts'].append(rune)
-            for monster_runes in monsters.values():
-                artifact_box.append(monster_runes)
+            pass
+            # artifact_box.append({
+            #     'name': 'Not Equipped',
+            #     'artifacts': artifact_filter.qs.filter(assigned_to__isnull=True)
+            # })
+            #
+            # # Create a dictionary of monster PKs and their equipped runes
+            # monsters = OrderedDict()
+            # unassigned_runes = artifact_filter.qs.filter(
+            #     assigned_to__isnull=False
+            # ).order_by(
+            #     'slot'
+            # )
+            #
+            # for rune in unassigned_runes:
+            #     if rune.assigned_to.pk not in monsters:
+            #         monsters[rune.assigned_to.pk] = {
+            #             'name': str(rune.assigned_to),
+            #             'artifacts': []
+            #         }
+            #
+            #     monsters[rune.assigned_to.pk]['artifacts'].append(rune)
+            # for monster_runes in monsters.values():
+            #     artifact_box.append(monster_runes)
 
         context['artifacts'] = artifact_box
         context['box_grouping'] = box_grouping
@@ -156,6 +151,10 @@ def add(request, profile_name):
             new_artifact = form.save(commit=False)
             new_artifact.owner = request.user.summoner
             new_artifact.save()
+
+            if new_artifact.assigned_to:
+                # Assign to new monster
+                new_artifact.assigned_to.default_build.assign_artifact(new_artifact)
 
             messages.success(request, 'Added ' + str(new_artifact))
 
@@ -180,14 +179,17 @@ def add(request, profile_name):
             }
     else:
         # Check for any pre-filled GET parameters
-        element = request.GET.get('element', None)
-        archetype = request.GET.get('archetype', None)
-        if element is not None:
+        specific_slot = request.GET.get('slot', None)
+
+        if specific_slot in [v[0] for v in ArtifactInstance.NORMAL_ELEMENT_CHOICES]:
             slot = ArtifactInstance.SLOT_ELEMENTAL
-        elif archetype is not None:
+            element = specific_slot
+            archetype = None
+        elif specific_slot in [v[0] for v in ArtifactInstance.ARCHETYPE_CHOICES]:
             slot = ArtifactInstance.SLOT_ARCHETYPE
-        else:
-            slot = None
+            archetype = specific_slot
+            element = None
+
         assigned_to = request.GET.get('assigned_to', None)
 
         try:
@@ -234,8 +236,19 @@ def edit(request, profile_name, artifact_id):
         context.update(csrf(request))
 
         if request.method == 'POST' and form.is_valid():
+            orig_assigned_to = ArtifactInstance.objects.get(pk=form.instance.pk).assigned_to
             artifact = form.save()
+
+            if orig_assigned_to and artifact.assigned_to != orig_assigned_to:
+                # Unassign from old monster
+                orig_assigned_to.default_build.artifacts.remove(artifact)
+
+            if artifact.assigned_to:
+                # Assign to new monster
+                artifact.assigned_to.default_build.assign_artifact(artifact)
+
             messages.success(request, 'Saved changes to ' + str(artifact))
+
             form = ArtifactInstanceForm()
             form.helper.form_action = reverse('herders:artifact_edit', kwargs={'profile_name': profile_name, 'artifact_id': artifact_id})
 
@@ -264,11 +277,9 @@ def edit(request, profile_name, artifact_id):
 @username_case_redirect
 @login_required
 def assign(request, profile_name, instance_id, slot=None):
-    qs = ArtifactInstance.objects.filter(owner=request.user.summoner, assigned_to=None)
+    qs = ArtifactInstance.objects.filter(owner=request.user.summoner)
     filter_form = AssignArtifactForm(request.POST or None, initial={'slot': [slot]}, prefix='assign')
     filter_form.helper.form_action = reverse('herders:artifact_assign', kwargs={'profile_name': profile_name, 'instance_id': instance_id})
-    # instance = get_object_or_404(MonsterInstance, pk=instance_id)
-    # qs = qs.filter(Q(archetype=instance.monster.archetype) | Q(element=instance.monster.element))
 
     if request.method == 'POST' and filter_form.is_valid():
         filter = ArtifactInstanceFilter(filter_form.cleaned_data, queryset=qs)
@@ -309,13 +320,10 @@ def assign(request, profile_name, instance_id, slot=None):
 @login_required
 def assign_choice(request, profile_name, instance_id, artifact_id):
     monster = get_object_or_404(MonsterInstance, pk=instance_id)
+    build = monster.default_build
     artifact = get_object_or_404(ArtifactInstance, pk=artifact_id)
 
-    # Clear existing artifacts assigned here
-    monster.artifactinstance_set.filter(slot=artifact.slot).update(assigned_to=False)
-
-    artifact.assigned_to = monster
-    artifact.save()
+    build.assign_artifact(artifact)
 
     response_data = {
         'code': 'success',
@@ -323,9 +331,10 @@ def assign_choice(request, profile_name, instance_id, artifact_id):
 
     return JsonResponse(response_data)
 
+
 @username_case_redirect
 @login_required
-def unassign(request, profile_name, artifact_id):
+def unassign(request, profile_name, instance_id, artifact_id):
     try:
         summoner = Summoner.objects.select_related('user').get(user__username=profile_name)
     except Summoner.DoesNotExist:
@@ -335,8 +344,8 @@ def unassign(request, profile_name, artifact_id):
 
     if is_owner:
         artifact = get_object_or_404(ArtifactInstance, pk=artifact_id)
-        artifact.assigned_to = None
-        artifact.save()
+        mon = get_object_or_404(MonsterInstance, pk=instance_id)
+        mon.default_build.artifacts.remove(artifact)
 
         response_data = {
             'code': 'success',

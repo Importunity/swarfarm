@@ -943,7 +943,8 @@ class AddRuneInstanceForm(ModelForm):
             'innate_stat', 'innate_stat_value',
             'substats', 'substat_values', 'substats_enchanted', 'substats_grind_value',
             'substats', 'substats_enchanted',
-            'assigned_to', 'notes', 'marked_for_sale',
+            'assigned_to',
+            'notes', 'marked_for_sale',
         )
         widgets = {
             'assigned_to': autocomplete.ModelSelect2(url='monster-instance-autocomplete'),

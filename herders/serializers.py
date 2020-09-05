@@ -4,7 +4,7 @@ from rest_framework.validators import UniqueValidator
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
 from herders.models import Summoner, Storage, BuildingInstance, MonsterInstance, MonsterPiece, RuneInstance, \
-    RuneCraftInstance, TeamGroup, Team, RuneBuild
+    RuneCraftInstance, TeamGroup, Team, RuneBuild, ArtifactInstance
 
 
 class AddOwnerOnCreate:
@@ -30,12 +30,30 @@ class RuneInstanceSerializer(serializers.ModelSerializer, AddOwnerOnCreate):
         ]
 
 
+class ArtifactInstanceSerializer(serializers.ModelSerializer, AddOwnerOnCreate):
+    url = NestedHyperlinkedIdentityField(
+        view_name='profile/artifacts-detail',
+        parent_lookup_kwargs={'user_pk': 'owner__user__username'},
+    )
+
+    class Meta:
+        model = ArtifactInstance
+        fields = [
+            'id', 'url', 'com2us_id', 'assigned_to',
+            'slot', 'element', 'archetype', 'quality', 'original_quality', 'level',
+            'main_stat', 'main_stat_value',
+            'effects', 'effects_value', 'effects_upgrade_count', 'effects_reroll_count',
+            'efficiency', 'max_efficiency',
+        ]
+
+
 class RuneBuildSerializer(serializers.ModelSerializer, AddOwnerOnCreate):
     url = NestedHyperlinkedIdentityField(
         view_name='profile/rune-builds-detail',
         parent_lookup_kwargs={'user_pk': 'owner__user__username'},
     )
-    runes = RuneInstanceSerializer(many=True, read_only=True)
+    runes = RuneInstanceSerializer(many=True)
+    artifacts = ArtifactInstanceSerializer(many=True)
 
     class Meta:
         model = RuneBuild
@@ -45,6 +63,7 @@ class RuneBuildSerializer(serializers.ModelSerializer, AddOwnerOnCreate):
             'name',
             'monster',
             'runes',
+            'artifacts',
             'hp',
             'hp_pct',
             'attack',
@@ -77,10 +96,6 @@ class RuneCraftInstanceSerializer(serializers.ModelSerializer, AddOwnerOnCreate)
 
 
 class MonsterInstanceSerializer(serializers.ModelSerializer, AddOwnerOnCreate):
-    runes = RuneInstanceSerializer(many=True, read_only=True, source='runeinstance_set')
-    # default_build = RuneBuildSerializer(read_only=True)
-    # rta_build = RuneBuildSerializer(read_only=True)
-
     class Meta:
         model = MonsterInstance
         fields = [
@@ -88,7 +103,7 @@ class MonsterInstanceSerializer(serializers.ModelSerializer, AddOwnerOnCreate):
             'stars', 'level', 'skill_1_level', 'skill_2_level', 'skill_3_level', 'skill_4_level',
             'base_hp', 'base_attack', 'base_defense', 'base_speed', 'base_crit_rate', 'base_crit_damage', 'base_resistance', 'base_accuracy',
             'rune_hp', 'rune_attack', 'rune_defense', 'rune_speed', 'rune_crit_rate', 'rune_crit_damage', 'rune_resistance', 'rune_accuracy',
-            'runes', 'default_build', 'rta_build', 'avg_rune_efficiency',
+            'default_build', 'rta_build',
             'fodder', 'in_storage', 'ignore_for_fusion', 'priority', 'notes',
         ]
 

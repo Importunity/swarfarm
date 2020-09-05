@@ -22,21 +22,16 @@ Personal:
 /profile/<username>/rune-builds/id
 /profile/<username>/rune-crafts/
 /profile/<username>/rune-crafts/<id>
+/profile/<username>/artifacts/
+/profile/<username>/artifacts/<id>
 /profile/<username>/teams/
 /profile/<username>/teams/<id>
 
-Global, for searching and filtering:
-/monster-instances/
-/monster-instances/<id>
-/rune-instances/
-/rune-instances/<id>
 """
 
 router = DefaultRouter()
 router.register(r'profiles/upload', ProfileJsonUpload, base_name='profile/upload')
 router.register(r'profiles', SummonerViewSet, base_name='profiles')
-# router.register(r'monster-instances', GlobalMonsterInstanceViewSet, base_name='monster-instances')
-# router.register(r'rune-instances', GlobalRuneInstanceViewSet, base_name='rune-instances')
 
 profile_router = NestedDefaultRouter(router, r'profiles', lookup='user')
 profile_router.register(r'monsters', MonsterInstanceViewSet, base_name='profile/monsters')
@@ -44,6 +39,7 @@ profile_router.register(r'monster-pieces', MonsterPieceViewSet, base_name='profi
 profile_router.register(r'runes', RuneInstanceViewSet, base_name='profile/runes')
 profile_router.register(r'rune-builds', RuneBuildViewSet, base_name='profile/rune-builds')
 profile_router.register(r'rune-crafts', RuneCraftInstanceViewSet, base_name='profile/rune-crafts')
+profile_router.register(r'artifacts', ArtifactInstanceViewSet, base_name='profile/artifacts')
 profile_router.register(r'buildings', BuildingViewSet, base_name='profile/buildings')
 profile_router.register(r'team-groups', TeamGroupViewSet, base_name='profile/team-groups')
 profile_router.register(r'teams', TeamViewSet, base_name='profile/teams')

@@ -4,8 +4,7 @@ from django_filters import rest_framework as filters
 from rest_framework import viewsets, status
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.renderers import JSONRenderer
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from herders.api_filters import SummonerFilter, MonsterInstanceFilter, RuneInstanceFilter, TeamFilter
@@ -46,34 +45,6 @@ class SummonerViewSet(viewsets.ModelViewSet):
             return FullUserSerializer
         else:
             return SummonerSerializer
-
-
-class GlobalMonsterInstanceViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = MonsterInstance.objects.filter(owner__public=True).select_related(
-        'monster',
-        'owner__user',
-    ).prefetch_related(
-        'runeinstance_set',
-        'runeinstance_set__owner__user',
-    ).order_by()
-    serializer_class = MonsterInstanceSerializer
-    permission_classes = [AllowAny]
-    pagination_class = PublicListPagination
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = MonsterInstanceFilter
-
-
-class GlobalRuneInstanceViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = RuneInstance.objects.filter(owner__public=True).select_related(
-        'owner',
-        'owner__user',
-        'assigned_to',
-    ).order_by()
-    serializer_class = RuneInstanceSerializer
-    permission_classes = [AllowAny]
-    pagination_class = PublicListPagination
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = RuneInstanceFilter
 
 
 class ProfileItemMixin(viewsets.GenericViewSet):
@@ -119,8 +90,11 @@ class RuneBuildViewSet(ProfileItemMixin, viewsets.ModelViewSet):
     ).prefetch_related(
         'runes',
         'runes__owner',
-        'runes__owner__user'
-    ).order_by()
+        'runes__owner__user',
+        'artifacts',
+        'artifacts__owner',
+        'artifacts__owner__user',
+    )
     serializer_class = RuneBuildSerializer
 
 
@@ -193,7 +167,6 @@ class RuneInstanceViewSet(ProfileItemMixin, viewsets.ModelViewSet):
         'assigned_to',
     )
     serializer_class = RuneInstanceSerializer
-    # renderer_classes = [JSONRenderer]  # Browseable API causes major query explosion when trying to generate form options.
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = RuneInstanceFilter
     ordering_fields = (
@@ -216,6 +189,14 @@ class RuneCraftInstanceViewSet(ProfileItemMixin, viewsets.ModelViewSet):
         'owner__user',
     )
     serializer_class = RuneCraftInstanceSerializer
+
+
+class ArtifactInstanceViewSet(ProfileItemMixin, viewsets.ModelViewSet):
+    queryset = ArtifactInstance.objects.all().select_related(
+        'owner',
+        'owner__user',
+    )
+    serializer_class = ArtifactInstanceSerializer
 
 
 class BuildingViewSet(ProfileItemMixin, viewsets.ModelViewSet):
@@ -248,7 +229,6 @@ class TeamGroupViewSet(ProfileItemMixin, viewsets.ModelViewSet):
 class TeamViewSet(ProfileItemMixin, viewsets.ModelViewSet):
     queryset = Team.objects.all().select_related('group', 'leader').prefetch_related('leader__runeinstance_set', 'roster', 'roster__runeinstance_set')
     serializer_class = TeamSerializer
-    renderer_classes = [JSONRenderer]  # Browseable API causes major query explosion when trying to generate form options.
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = TeamFilter
 

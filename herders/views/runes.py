@@ -222,6 +222,10 @@ def rune_add(request, profile_name):
             new_rune.owner = request.user.summoner
             new_rune.save()
 
+            if new_rune.assigned_to:
+                # Assign to new monster
+                new_rune.assigned_to.default_build.assign_rune(new_rune)
+
             messages.success(request, 'Added ' + str(new_rune))
 
             # Send back blank form
@@ -290,7 +294,17 @@ def rune_edit(request, profile_name, rune_id):
         context.update(csrf(request))
 
         if request.method == 'POST' and form.is_valid():
+            orig_assigned_to = RuneInstance.objects.get(pk=form.instance.pk).assigned_to
             rune = form.save()
+
+            if orig_assigned_to and rune.assigned_to != orig_assigned_to:
+                # Unassign from old monster
+                orig_assigned_to.default_build.runes.remove(rune)
+
+            if rune.assigned_to:
+                # Assign to new monster
+                rune.assigned_to.default_build.assign_rune(rune)
+
             messages.success(request, 'Saved changes to ' + str(rune))
             form = AddRuneInstanceForm(auto_id='edit_id_%s')
             form.helper.form_action = reverse('herders:rune_edit', kwargs={'profile_name': profile_name, 'rune_id': rune_id})
@@ -366,20 +380,10 @@ def rune_assign(request, profile_name, instance_id, slot=None):
 @login_required
 def rune_assign_choice(request, profile_name, instance_id, rune_id):
     monster = get_object_or_404(MonsterInstance, pk=instance_id)
+    build = monster.default_build
     rune = get_object_or_404(RuneInstance, pk=rune_id)
 
-    if rune.assigned_to is not None:
-        # TODO: Warn about removing from other monster?
-        pass
-
-    # Check for existing rune.
-    existing_runes = monster.runeinstance_set.filter(slot=rune.slot)
-    for existing_rune in existing_runes:
-        existing_rune.assigned_to = None
-
-    rune.assigned_to = monster
-    rune.save()
-    monster.save()
+    build.assign_rune(rune)
 
     response_data = {
         'code': 'success',
@@ -390,8 +394,7 @@ def rune_assign_choice(request, profile_name, instance_id, rune_id):
 
 @username_case_redirect
 @login_required
-def rune_unassign(request, profile_name, rune_id):
-    rune = get_object_or_404(RuneInstance, pk=rune_id)
+def rune_unassign(request, profile_name, instance_id, rune_id):
     try:
         summoner = Summoner.objects.select_related('user').get(user__username=profile_name)
     except Summoner.DoesNotExist:
@@ -400,12 +403,9 @@ def rune_unassign(request, profile_name, rune_id):
     is_owner = (request.user.is_authenticated and summoner.user == request.user)
 
     if is_owner:
-        mon = rune.assigned_to
-        rune.assigned_to = None
-        rune.save()
-
-        if mon:
-            mon.save()
+        rune = get_object_or_404(RuneInstance, pk=rune_id)
+        mon = get_object_or_404(MonsterInstance, pk=instance_id)
+        mon.default_build.runes.remove(rune)
 
         response_data = {
             'code': 'success',
