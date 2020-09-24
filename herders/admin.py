@@ -68,7 +68,7 @@ class RuneBuildAdmin(admin.ModelAdmin):
         'owner',
         'monster',
     )
-    readonly_fields = ('owner', 'monster', 'runes', )
+    readonly_fields = ('owner', 'monster', 'runes', 'artifacts')
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(

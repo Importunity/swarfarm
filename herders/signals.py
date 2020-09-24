@@ -19,12 +19,14 @@ def validate_rune_build_runes(sender, instance, action, reverse, model, pk_set, 
         return
 
     too_many_slots = model.objects.filter(
+        runebuild=instance
+    ).exclude(
         pk__in=pk_set
     ).values('slot').annotate(
         slot__count=Count('slot')
     ).filter(
-        slot__count__gt=1
-    ).order_by('slot')
+        slot__count__gte=1
+    )
 
     if too_many_slots.exists():
         errors = []
@@ -47,12 +49,14 @@ def validate_rune_build_artifacts(sender, instance, action, reverse, model, pk_s
         return
 
     too_many_slots = model.objects.filter(
+        runebuild=instance
+    ).exclude(
         pk__in=pk_set
     ).values('slot').annotate(
         slot__count=Count('slot')
     ).filter(
-        slot__count__gt=1
-    ).order_by('slot')
+        slot__count__gte=1
+    )
 
     if too_many_slots.exists():
         errors = []

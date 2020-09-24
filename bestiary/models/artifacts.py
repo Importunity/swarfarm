@@ -232,7 +232,7 @@ class ArtifactObjectBase(models.Model, base.Quality, base.Archetype, base.Elemen
                 })
 
 
-class Artifact(ArtifactObjectBase, base.Stars):
+class Artifact(ArtifactObjectBase):
     MAIN_STAT_CHOICES = (
         (ArtifactObjectBase.STAT_HP, 'HP'),
         (ArtifactObjectBase.STAT_ATK, 'ATK'),

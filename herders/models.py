@@ -568,6 +568,7 @@ class MonsterInstance(models.Model, base.Stars):
 
         if self.default_build is None or self.rta_build is None:
             self._initialize_rune_build()
+            self.save()
 
     def _initialize_rune_build(self):
         # Create empty rune builds if none exists
